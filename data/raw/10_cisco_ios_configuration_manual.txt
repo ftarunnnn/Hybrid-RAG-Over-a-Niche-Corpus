@@ -1,0 +1,107 @@
+================================================================================
+CISCO IOS ENTERPRISE ROUTER AND SWITCH CLI CONFIGURATION MANUAL
+================================================================================
+Document ID: DOC-CISCO-CLI-2026-v4
+Classification: Internal Engineering Playbook
+Target Hardware: Cisco Catalyst 9300 Switches / ISR 4000 Series Routers
+Operating System: Cisco IOS-XE Software 17.9.4a
+
+--------------------------------------------------------------------------------
+1. GLOBAL SYSTEM SETUP AND SECURITY HARDENING
+--------------------------------------------------------------------------------
+hostname CORE-RTR-01
+ip domain name corp.internal.net
+crypto key generate rsa modulus 4096
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+
+enable secret 9 $9$Ju8x...HashSecretString
+service password-encryption
+service timestamps debug datetime msec
+service timestamps log datetime msec
+
+line con 0
+ exec-timeout 10 0
+ logging synchronous
+ login local
+ transport output none
+
+line vty 0 4
+ exec-timeout 15 0
+ logging synchronous
+ login local
+ transport input ssh
+
+--------------------------------------------------------------------------------
+2. INTERFACE, 802.1Q TRUNKING, AND SVI CONFIGURATION
+--------------------------------------------------------------------------------
+vlan 10
+ name USERS_CORP
+!
+vlan 20
+ name SERVERS_DMZ
+!
+vlan 999
+ name UNUSED_NATIVE
+
+interface GigabitEthernet1/0/1
+ description UPLINK-TO-DISTRIBUTION-SWITCH
+ switchport mode trunk
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 10,20
+ spanning-tree portfast trunk
+!
+interface GigabitEthernet1/0/10
+ description WORKSTATION-PORT
+ switchport mode access
+ switchport access vlan 10
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+!
+interface Vlan10
+ description GATEWAY-USERS
+ ip address 10.10.10.1 255.255.255.0
+ no shutdown
+!
+interface Vlan20
+ description GATEWAY-DMZ-SERVERS
+ ip address 10.10.20.1 255.255.255.0
+ no shutdown
+
+--------------------------------------------------------------------------------
+3. OSPFv2 DYNAMIC ROUTING CONFIGURATION
+--------------------------------------------------------------------------------
+router ospf 1
+ router-id 1.1.1.1
+ auto-cost reference-bandwidth 100000
+ passive-interface default
+ no passive-interface GigabitEthernet1/0/1
+ network 10.10.10.0 0.0.0.255 area 0
+ network 10.10.20.0 0.0.0.255 area 0
+ network 1.1.1.1 0.0.0.0 area 0
+
+--------------------------------------------------------------------------------
+4. ACCESS CONTROL LISTS (ACL) AND PAT (NAT OVERLOAD)
+--------------------------------------------------------------------------------
+ip access-list extended ACL_PERMIT_INTERNAL_NAT
+ 10 remark Permit RFC1918 internal subnets to be translated
+ 20 permit ip 10.10.10.0 0.0.0.255 any
+ 30 permit ip 10.10.20.0 0.0.0.255 any
+ 40 deny ip any any log-input
+
+interface GigabitEthernet0/0/0
+ description OUTSIDE_ISP_INTERNET
+ ip address 203.0.113.2 255.255.255.248
+ ip nat outside
+!
+interface GigabitEthernet0/0/1
+ description INSIDE_CORE_NETWORK
+ ip address 10.0.0.1 255.255.255.252
+ ip nat inside
+!
+ip nat inside source list ACL_PERMIT_INTERNAL_NAT interface GigabitEthernet0/0/0 overload
+ip route 0.0.0.0 0.0.0.0 203.0.113.1
