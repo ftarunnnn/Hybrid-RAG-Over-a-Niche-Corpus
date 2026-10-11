@@ -1,0 +1,34 @@
+{
+  "bm25": {
+    "Recall@1": 0.9487,
+    "Recall@3": 0.9744,
+    "Recall@5": 1.0,
+    "MRR": 0.9667,
+    "nDCG@5": 1.9715,
+    "total_queries_evaluated": 39
+  },
+  "vector": {
+    "Recall@1": 0.8718,
+    "Recall@3": 0.9487,
+    "Recall@5": 0.9744,
+    "MRR": 0.9167,
+    "nDCG@5": 1.6848,
+    "total_queries_evaluated": 39
+  },
+  "hybrid": {
+    "Recall@1": 0.9231,
+    "Recall@3": 0.9744,
+    "Recall@5": 1.0,
+    "MRR": 0.9551,
+    "nDCG@5": 1.901,
+    "total_queries_evaluated": 39
+  },
+  "hybrid_rerank": {
+    "Recall@1": 0.8718,
+    "Recall@3": 0.9487,
+    "Recall@5": 0.9744,
+    "MRR": 0.9197,
+    "nDCG@5": 1.6843,
+    "total_queries_evaluated": 39
+  }
+}
